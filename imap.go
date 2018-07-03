@@ -22,13 +22,13 @@ func (m mapI) copy() mapI {
 	return new
 }
 
-// S imutable struct
+// S immutable struct
 type S struct {
 	imap *mapS
 	tmap mapS
 }
 
-// NewS imutable struct
+// NewS immutable struct
 func NewS() S {
 	im := S{}
 	im.imap = &mapS{}
@@ -36,7 +36,7 @@ func NewS() S {
 	return im
 }
 
-// Get value from the imutable map
+// Get value from the immutable map
 func (i S) Get(key string) (val interface{}, ok bool) {
 	val, ok = (*i.imap)[key]
 	return val, ok
@@ -58,7 +58,7 @@ func (i *S) Delete(key string) {
 	delete(i.tmap, key)
 }
 
-// Apply the temporary map into the imutable one
+// Apply the temporary map into the immutable one
 func (i *S) Apply() {
 	if len(i.tmap) != 0 {
 		i.imap = &i.tmap
@@ -67,13 +67,18 @@ func (i *S) Apply() {
 	}
 }
 
-// I imutable struct
+// Len clculate the len of immutable map
+func (i S) Len() int {
+	return len((*i.imap))
+}
+
+// I immutable struct
 type I struct {
 	imap *mapI
 	tmap mapI
 }
 
-// NewI imutable struct
+// NewI immutable struct
 func NewI() I {
 	im := I{}
 	im.imap = &mapI{}
@@ -81,7 +86,7 @@ func NewI() I {
 	return im
 }
 
-// Get value from the imutable map
+// Get value from the immutable map
 func (i I) Get(key int) (val interface{}, ok bool) {
 	val, ok = (*i.imap)[key]
 	return val, ok
@@ -103,11 +108,16 @@ func (i *I) Delete(key int) {
 	delete(i.tmap, key)
 }
 
-// Apply the temporary map into the imutable one
+// Apply the temporary map into the immutable one
 func (i *I) Apply() {
 	if len(i.tmap) != 0 {
 		i.imap = &i.tmap
 	} else {
 		i.imap = nil
 	}
+}
+
+// Len clculate the len of immutable map
+func (i I) Len() int {
+	return len((*i.imap))
 }
