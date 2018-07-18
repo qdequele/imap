@@ -1,123 +1,226 @@
 package imap
 
-// mapS define the type of map for string hash
-type mapS map[string]interface{}
+import (
+	"sync"
+)
 
-func (m mapS) copy() mapS {
-	new := make(mapS)
+//
+// Map > map[interface{}]interface{}
+//
+
+type mapOfInterface map[interface{}]interface{}
+
+func (m mapOfInterface) copy() *mapOfInterface {
+	new := make(mapOfInterface)
 	for key, value := range m {
 		new[key] = value
 	}
-	return new
+	return &new
 }
 
-// mapI define the type of map for int hash
-type mapI map[int]interface{}
-
-func (m mapI) copy() mapI {
-	new := make(mapI)
-	for key, value := range m {
-		new[key] = value
-	}
-	return new
+// Map immutable struct map[interface{}]interface{}
+type Map struct {
+	mutex sync.Mutex
+	imap  *mapOfInterface
+	tmap  *mapOfInterface
 }
 
-// S immutable struct
-type S struct {
-	imap *mapS
-	tmap mapS
-}
-
-// NewS immutable struct
-func NewS() S {
-	im := S{}
-	im.imap = &mapS{}
-	im.tmap = mapS{}
-	return im
+// NewMap create immutable struct Map
+func NewMap() *Map {
+	im := Map{}
+	im.imap = &mapOfInterface{}
+	im.tmap = &mapOfInterface{}
+	return &im
 }
 
 // Get value from the immutable map
-func (i S) Get(key string) (val interface{}, ok bool) {
-	val, ok = (*i.imap)[key]
+func (m Map) Get(key interface{}) (val interface{}, ok bool) {
+	val, ok = (*m.imap)[key]
 	return val, ok
 }
 
 // Add a key inside the temporary map
-func (i *S) Add(key string, value interface{}) {
-	if len(i.tmap) == 0 {
-		i.tmap = (*i.imap).copy()
-	}
-	i.tmap[key] = value
+func (m *Map) Add(key interface{}, value interface{}) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	(*m.tmap)[key] = value
 }
 
 // Delete a key inside the temporary map
-func (i *S) Delete(key string) {
-	if len(i.tmap) == 0 {
-		i.tmap = (*i.imap).copy()
-	}
-	delete(i.tmap, key)
+func (m *Map) Delete(key interface{}) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	delete(*m.tmap, key)
 }
 
 // Apply the temporary map into the immutable one
-func (i *S) Apply() {
-	if len(i.tmap) != 0 {
-		i.imap = &i.tmap
-	} else {
-		i.imap = nil
+func (m *Map) Apply() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	tmp := m.tmap.copy()
+	m.imap = m.tmap
+	m.tmap = tmp
+}
+
+// Len calculate the len of immutable map
+func (m Map) Len() int {
+	return len((*m.imap))
+}
+
+//
+// MapS > map[string]interface{}
+//
+
+// mapOfString define the type of map for string hash
+type mapOfString map[string]interface{}
+
+func (m mapOfString) copy() *mapOfString {
+	new := make(mapOfString)
+	for key, value := range m {
+		new[key] = value
 	}
+	return &new
 }
 
-// Len clculate the len of immutable map
-func (i S) Len() int {
-	return len((*i.imap))
+// MapS immutable struct for map[string]interface{}
+type MapS struct {
+	mutex sync.Mutex
+	imap  *mapOfString
+	tmap  *mapOfString
 }
 
-// I immutable struct
-type I struct {
-	imap *mapI
-	tmap mapI
-}
-
-// NewI immutable struct
-func NewI() I {
-	im := I{}
-	im.imap = &mapI{}
-	im.tmap = mapI{}
-	return im
+// NewMapS create immutable struct map[string]interface{}
+func NewMapS() *MapS {
+	im := MapS{}
+	im.imap = &mapOfString{}
+	im.tmap = &mapOfString{}
+	return &im
 }
 
 // Get value from the immutable map
-func (i I) Get(key int) (val interface{}, ok bool) {
-	val, ok = (*i.imap)[key]
+func (m MapS) Get(key string) (val interface{}, ok bool) {
+	val, ok = (*m.imap)[key]
 	return val, ok
 }
 
 // Add a key inside the temporary map
-func (i *I) Add(key int, value interface{}) {
-	if len(i.tmap) == 0 {
-		i.tmap = (*i.imap).copy()
-	}
-	i.tmap[key] = value
+func (m *MapS) Add(key string, value interface{}) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	(*m.tmap)[key] = value
 }
 
 // Delete a key inside the temporary map
-func (i *I) Delete(key int) {
-	if len(i.tmap) == 0 {
-		i.tmap = (*i.imap).copy()
-	}
-	delete(i.tmap, key)
+func (m *MapS) Delete(key string) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	delete(*m.tmap, key)
 }
 
 // Apply the temporary map into the immutable one
-func (i *I) Apply() {
-	if len(i.tmap) != 0 {
-		i.imap = &i.tmap
-	} else {
-		i.imap = nil
-	}
+func (m *MapS) Apply() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	tmp := m.tmap.copy()
+	m.imap = m.tmap
+	m.tmap = tmp
 }
 
 // Len clculate the len of immutable map
-func (i I) Len() int {
-	return len((*i.imap))
+func (m MapS) Len() int {
+	return len((*m.imap))
+}
+
+//
+// MapI > map[int]interface{}
+//
+
+// mapOfInt define the type of map for int hash
+type mapOfInt map[int]interface{}
+
+func (m mapOfInt) copy() *mapOfInt {
+	new := make(mapOfInt)
+	for key, value := range m {
+		new[key] = value
+	}
+	return &new
+}
+
+// MapI immutable struct map[int]interface{}
+type MapI struct {
+	mutex sync.Mutex
+	imap  *mapOfInt
+	tmap  *mapOfInt
+}
+
+// NewMapI create immutable struct MapI
+func NewMapI() *MapI {
+	im := MapI{}
+	im.imap = &mapOfInt{}
+	im.tmap = &mapOfInt{}
+	return &im
+}
+
+// Get value from the immutable map
+func (m MapI) Get(key int) (val interface{}, ok bool) {
+	val, ok = (*m.imap)[key]
+	return val, ok
+}
+
+// Add a key inside the temporary map
+func (m *MapI) Add(key int, value interface{}) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	(*m.tmap)[key] = value
+}
+
+// Delete a key inside the temporary map
+func (m *MapI) Delete(key int) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	delete(*m.tmap, key)
+}
+
+// Apply the temporary map into the immutable one
+func (m *MapI) Apply() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	tmp := m.tmap.copy()
+	m.imap = m.tmap
+	m.tmap = tmp
+}
+
+// Len clculate the len of immutable map
+func (m MapI) Len() int {
+	return len((*m.imap))
+}
+
+//
+// AsyncMap > map[string]interface{} with mutex
+//
+
+type AsyncMap struct {
+	mutex sync.Mutex
+	m     map[string]interface{}
+}
+
+func NewAsyncMap() AsyncMap {
+	return AsyncMap{
+		m: make(map[string]interface{}),
+	}
+}
+
+// Get value from the immutable map
+func (m AsyncMap) Get(key string) (val interface{}) {
+	m.mutex.Lock()
+	val = m.m[key]
+	m.mutex.Unlock()
+	return val
+}
+
+// Add a key inside the temporary map
+func (m AsyncMap) Add(key string, value interface{}) {
+	m.mutex.Lock()
+	m.m[key] = value
+	m.mutex.Unlock()
 }
