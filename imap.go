@@ -20,9 +20,9 @@ func (m mapOfInterface) copy() *mapOfInterface {
 
 // Map immutable struct map[interface{}]interface{}
 type Map struct {
-	mutex sync.Mutex
-	imap  *mapOfInterface
-	tmap  *mapOfInterface
+	sync.Mutex
+	imap *mapOfInterface
+	tmap *mapOfInterface
 }
 
 // NewMap create immutable struct Map
@@ -41,22 +41,22 @@ func (m Map) Get(key interface{}) (val interface{}, ok bool) {
 
 // Add a key inside the temporary map
 func (m *Map) Add(key interface{}, value interface{}) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	(*m.tmap)[key] = value
 }
 
 // Delete a key inside the temporary map
 func (m *Map) Delete(key interface{}) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	delete(*m.tmap, key)
 }
 
 // Apply the temporary map into the immutable one
 func (m *Map) Apply() {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	tmp := m.tmap.copy()
 	m.imap = m.tmap
 	m.tmap = tmp
@@ -84,9 +84,9 @@ func (m mapOfString) copy() *mapOfString {
 
 // MapS immutable struct for map[string]interface{}
 type MapS struct {
-	mutex sync.Mutex
-	imap  *mapOfString
-	tmap  *mapOfString
+	sync.Mutex
+	imap *mapOfString
+	tmap *mapOfString
 }
 
 // NewMapS create immutable struct map[string]interface{}
@@ -105,22 +105,22 @@ func (m MapS) Get(key string) (val interface{}, ok bool) {
 
 // Add a key inside the temporary map
 func (m *MapS) Add(key string, value interface{}) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	(*m.tmap)[key] = value
 }
 
 // Delete a key inside the temporary map
 func (m *MapS) Delete(key string) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	delete(*m.tmap, key)
 }
 
 // Apply the temporary map into the immutable one
 func (m *MapS) Apply() {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	tmp := m.tmap.copy()
 	m.imap = m.tmap
 	m.tmap = tmp
@@ -148,9 +148,9 @@ func (m mapOfInt) copy() *mapOfInt {
 
 // MapI immutable struct map[int]interface{}
 type MapI struct {
-	mutex sync.Mutex
-	imap  *mapOfInt
-	tmap  *mapOfInt
+	sync.Mutex
+	imap *mapOfInt
+	tmap *mapOfInt
 }
 
 // NewMapI create immutable struct MapI
@@ -169,22 +169,22 @@ func (m MapI) Get(key int) (val interface{}, ok bool) {
 
 // Add a key inside the temporary map
 func (m *MapI) Add(key int, value interface{}) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	(*m.tmap)[key] = value
 }
 
 // Delete a key inside the temporary map
 func (m *MapI) Delete(key int) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	delete(*m.tmap, key)
 }
 
 // Apply the temporary map into the immutable one
 func (m *MapI) Apply() {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	tmp := m.tmap.copy()
 	m.imap = m.tmap
 	m.tmap = tmp
@@ -196,14 +196,16 @@ func (m MapI) Len() int {
 }
 
 //
-// AsyncMap > map[string]interface{} with mutex
+// AsyncMap > map[string]interface{} with lock
 //
 
+// AsyncMap is a map[string]interface with mutex
 type AsyncMap struct {
-	mutex sync.Mutex
-	m     map[string]interface{}
+	sync.Mutex
+	m map[string]interface{}
 }
 
+// NewAsyncMap return new async map
 func NewAsyncMap() AsyncMap {
 	return AsyncMap{
 		m: make(map[string]interface{}),
@@ -212,15 +214,15 @@ func NewAsyncMap() AsyncMap {
 
 // Get value from the immutable map
 func (m AsyncMap) Get(key string) (val interface{}) {
-	m.mutex.Lock()
+	m.Lock()
 	val = m.m[key]
-	m.mutex.Unlock()
+	m.Unlock()
 	return val
 }
 
 // Add a key inside the temporary map
 func (m AsyncMap) Add(key string, value interface{}) {
-	m.mutex.Lock()
+	m.Lock()
 	m.m[key] = value
-	m.mutex.Unlock()
+	m.Unlock()
 }
