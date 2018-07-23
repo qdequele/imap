@@ -20,7 +20,7 @@ func (m mapOfInterface) copy() *mapOfInterface {
 
 // Map immutable struct map[interface{}]interface{}
 type Map struct {
-	sync.Mutex
+	lock sync.Mutex
 	imap *mapOfInterface
 	tmap *mapOfInterface
 }
@@ -41,25 +41,43 @@ func (m Map) Get(key interface{}) (val interface{}, ok bool) {
 
 // Add a key inside the temporary map
 func (m *Map) Add(key interface{}, value interface{}) {
-	m.Lock()
-	defer m.Unlock()
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	(*m.tmap)[key] = value
 }
 
 // Delete a key inside the temporary map
 func (m *Map) Delete(key interface{}) {
-	m.Lock()
-	defer m.Unlock()
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	delete(*m.tmap, key)
 }
 
 // Apply the temporary map into the immutable one
 func (m *Map) Apply() {
-	m.Lock()
-	defer m.Unlock()
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	tmp := m.tmap.copy()
 	m.imap = m.tmap
 	m.tmap = tmp
+}
+
+// MapIterator return type of Interate function
+type MapIterator struct {
+	key interface{}
+	val interface{}
+}
+
+// Interate allow to iterate over MapI
+func (m Map) Interate() <-chan MapIterator {
+	c := make(chan MapIterator)
+	go func() {
+		for key, val := range *(m.imap) {
+			c <- MapIterator{key, val}
+		}
+		close(c)
+	}()
+	return c
 }
 
 // Len calculate the len of immutable map
@@ -84,7 +102,7 @@ func (m mapOfString) copy() *mapOfString {
 
 // MapS immutable struct for map[string]interface{}
 type MapS struct {
-	sync.Mutex
+	lock sync.Mutex
 	imap *mapOfString
 	tmap *mapOfString
 }
@@ -105,25 +123,42 @@ func (m MapS) Get(key string) (val interface{}, ok bool) {
 
 // Add a key inside the temporary map
 func (m *MapS) Add(key string, value interface{}) {
-	m.Lock()
-	defer m.Unlock()
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	(*m.tmap)[key] = value
 }
 
 // Delete a key inside the temporary map
 func (m *MapS) Delete(key string) {
-	m.Lock()
-	defer m.Unlock()
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	delete(*m.tmap, key)
 }
 
 // Apply the temporary map into the immutable one
 func (m *MapS) Apply() {
-	m.Lock()
-	defer m.Unlock()
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	tmp := m.tmap.copy()
 	m.imap = m.tmap
 	m.tmap = tmp
+}
+
+// MapSIterator return type of Interate function
+type MapSIterator struct {
+	key string
+	val interface{}
+}
+
+func (m MapS) Interate() <-chan MapSIterator {
+	c := make(chan MapSIterator)
+	go func() {
+		for key, val := range *(m.imap) {
+			c <- MapSIterator{key, val}
+		}
+		close(c)
+	}()
+	return c
 }
 
 // Len clculate the len of immutable map
@@ -148,7 +183,7 @@ func (m mapOfInt) copy() *mapOfInt {
 
 // MapI immutable struct map[int]interface{}
 type MapI struct {
-	sync.Mutex
+	lock sync.Mutex
 	imap *mapOfInt
 	tmap *mapOfInt
 }
@@ -169,60 +204,45 @@ func (m MapI) Get(key int) (val interface{}, ok bool) {
 
 // Add a key inside the temporary map
 func (m *MapI) Add(key int, value interface{}) {
-	m.Lock()
-	defer m.Unlock()
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	(*m.tmap)[key] = value
 }
 
 // Delete a key inside the temporary map
 func (m *MapI) Delete(key int) {
-	m.Lock()
-	defer m.Unlock()
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	delete(*m.tmap, key)
 }
 
 // Apply the temporary map into the immutable one
 func (m *MapI) Apply() {
-	m.Lock()
-	defer m.Unlock()
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	tmp := m.tmap.copy()
 	m.imap = m.tmap
 	m.tmap = tmp
 }
 
+// MapIIterator return type of Interate function
+type MapIIterator struct {
+	key int
+	val interface{}
+}
+
+func (m MapI) Interate() <-chan MapIIterator {
+	c := make(chan MapIIterator)
+	go func() {
+		for key, val := range *(m.imap) {
+			c <- MapIIterator{key, val}
+		}
+		close(c)
+	}()
+	return c
+}
+
 // Len clculate the len of immutable map
 func (m MapI) Len() int {
 	return len((*m.imap))
-}
-
-//
-// AsyncMap > map[string]interface{} with lock
-//
-
-// AsyncMap is a map[string]interface with mutex
-type AsyncMap struct {
-	sync.Mutex
-	m map[string]interface{}
-}
-
-// NewAsyncMap return new async map
-func NewAsyncMap() AsyncMap {
-	return AsyncMap{
-		m: make(map[string]interface{}),
-	}
-}
-
-// Get value from the immutable map
-func (m AsyncMap) Get(key string) (val interface{}) {
-	m.Lock()
-	val = m.m[key]
-	m.Unlock()
-	return val
-}
-
-// Add a key inside the temporary map
-func (m AsyncMap) Add(key string, value interface{}) {
-	m.Lock()
-	m.m[key] = value
-	m.Unlock()
 }
