@@ -246,3 +246,112 @@ func (m MapI) Interate() <-chan MapIIterator {
 func (m MapI) Len() int {
 	return len((*m.imap))
 }
+
+// mapOfUInt define the type of map for int hash
+type mapOfUInt map[uint32]interface{}
+
+func (m mapOfUInt) copy() *mapOfUInt {
+	new := make(mapOfUInt)
+	for key, value := range m {
+		new[key] = value
+	}
+	return &new
+}
+
+// MapI immutable struct map[int]interface{}
+type MapUI struct {
+	lock sync.Mutex
+	imap *mapOfUInt
+	tmap *mapOfUInt
+}
+
+// NewMapUI create immutable struct MapUI
+func NewMapUI() *MapUI {
+	im := MapUI{}
+	im.imap = &mapOfUInt{}
+	im.tmap = &mapOfUInt{}
+	return &im
+}
+
+// Get value from the immutable map
+func (m MapUI) Get(key uint32) (val interface{}, ok bool) {
+	val, ok = (*m.imap)[key]
+	return val, ok
+}
+
+// Add a key inside the temporary map
+func (m *MapUI) Add(key uint32, value interface{}) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	(*m.tmap)[key] = value
+}
+
+// Delete a key inside the temporary map
+func (m *MapUI) Delete(key uint32) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	delete(*m.tmap, key)
+}
+
+// Apply the temporary map into the immutable one
+func (m *MapUI) Apply() {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	tmp := m.tmap.copy()
+	m.imap = m.tmap
+	m.tmap = tmp
+}
+
+// MapUIIterator return type of Interate function
+type MapUIIterator struct {
+	key uint32
+	val interface{}
+}
+
+func (m MapUI) Interate() <-chan MapUIIterator {
+	c := make(chan MapUIIterator)
+	go func() {
+		for key, val := range *(m.imap) {
+			c <- MapUIIterator{key, val}
+		}
+		close(c)
+	}()
+	return c
+}
+
+// Len clculate the len of immutable map
+func (m MapUI) Len() int {
+	return len((*m.imap))
+}
+
+//
+// AsyncMap > map[string]interface{} with lock
+//
+
+// AsyncMap is a map[string]interface with mutex
+type AsyncMap struct {
+	sync.RWMutex
+	m map[uint32]interface{}
+}
+
+// NewAsyncMap return new async map
+func NewAsyncMap() AsyncMap {
+	return AsyncMap{
+		m: make(map[uint32]interface{}),
+	}
+}
+
+// Get value from the immutable map
+func (m AsyncMap) Get(key uint32) (val interface{}, ok bool) {
+	m.Lock()
+	defer m.Unlock()
+	val, ok = m.m[key]
+	return val, ok
+}
+
+// Add a key inside the temporary map
+func (m AsyncMap) Add(key uint32, value interface{}) {
+	m.Lock()
+	defer m.Unlock()
+	m.m[key] = value
+}

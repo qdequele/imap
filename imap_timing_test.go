@@ -9,8 +9,18 @@ import (
 func BenchmarkAsyncMap(b *testing.B) {
 	m := sync.Map{}
 	for i := 0; i < b.N; i++ {
-		m.Store("a", "a")
-		if val, ok := m.Load("a"); ok != false && val == nil {
+		m.Store("1234567890123567890", "1234567890123567890")
+		if val, ok := m.Load("1234567890123567890"); ok != false && val == nil {
+			panic(fmt.Errorf("unexpected not found value"))
+		}
+	}
+}
+
+func BenchmarkSyncMap(b *testing.B) {
+	m := NewAsyncMap()
+	for i := 0; i < b.N; i++ {
+		m.Add(1, "a")
+		if val, ok := m.Get(1); ok != false && val == nil {
 			panic(fmt.Errorf("unexpected not found value"))
 		}
 	}
@@ -20,7 +30,7 @@ func BenchmarkAsyncMapRead(b *testing.B) {
 	m := sync.Map{}
 	m.Store("a", "a")
 	for i := 0; i < b.N; i++ {
-		if val, ok := m.Load("a"); ok != false && val == nil {
+		if val, ok := m.Load("a"); ok != false && val != "a" {
 			panic(fmt.Errorf("unexpected not found value"))
 		}
 	}
